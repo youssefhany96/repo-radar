@@ -101,9 +101,19 @@ export function RepoCard({
                     label={fmt.format(stats.data.open_issues_count)}
                     tooltip="Open issues"
                   />
-                  <Typography variant="caption" color="text.secondary" sx={{ alignSelf: "center" }}>
-                    updated {relativeTime(stats.data.pushed_at)}
-                  </Typography>
+                  <Tooltip
+                    title={
+                      stats.data.lastCommitDate
+                        ? `Last commit: ${new Date(stats.data.lastCommitDate).toLocaleString()}`
+                        : `Last push: ${new Date(stats.data.pushed_at).toLocaleString()}`
+                    }
+                  >
+                    <Typography variant="caption" color="text.secondary" sx={{ alignSelf: "center" }}>
+                      {stats.data.lastCommitDate
+                        ? `last commit ${relativeTime(stats.data.lastCommitDate)}`
+                        : `last push ${relativeTime(stats.data.pushed_at)}`}
+                    </Typography>
+                  </Tooltip>
                 </>
               )}
             </Stack>

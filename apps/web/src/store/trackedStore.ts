@@ -58,6 +58,8 @@ export const useTrackedStore = create<TrackedState>()(
                 stargazers_count: r.stargazers_count,
                 open_issues_count: r.open_issues_count,
                 pushed_at: r.pushed_at,
+                // Search doesn't return commit data — filled in on first refresh
+                lastCommitDate: null,
               },
               fetchedAt: Date.now(),
             },

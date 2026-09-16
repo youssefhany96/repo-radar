@@ -43,8 +43,42 @@ export function searchRepositories(query: string, signal?: AbortSignal) {
   );
 }
 
-export function getRepoStats(fullName: string, signal?: AbortSignal) {
-  return request<RepoStats>(`/repos/${fullName}`, signal);
+interface RepoResponse {
+  stargazers_count: number;
+  open_issues_count: number;
+  pushed_at: string;
+}
+
+interface CommitResponse {
+  commit: { committer: { date: string } | null };
+}
+
+/**
+ * Two calls, because `pushed_at` on the repo endpoint is not the last commit
+ * date — a push can contain older commits, and force-pushes move it without a
+ * new commit. The commits endpoint gives the real thing.
+ *
+ * They run in parallel since neither depends on the other, and the commit call
+ * is allowed to fail on its own: an empty repo has no commits, and a rate limit
+ * shouldn't discard stars and issues we successfully fetched.
+ */
+export async function getRepoStats(
+  fullName: string,
+  signal?: AbortSignal,
+): Promise<RepoStats> {
+  const [repo, commit] = await Promise.all([
+    request<RepoResponse>(`/repos/${fullName}`, signal),
+    request<CommitResponse[]>(`/repos/${fullName}/commits?per_page=1`, signal)
+      .then((commits) => commits[0] ?? null)
+      .catch(() => null),
+  ]);
+
+  return {
+    stargazers_count: repo.stargazers_count,
+    open_issues_count: repo.open_issues_count,
+    pushed_at: repo.pushed_at,
+    lastCommitDate: commit?.commit.committer?.date ?? null,
+  };
 }
 
 export { GitHubError };

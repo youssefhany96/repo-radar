@@ -79,7 +79,7 @@ one repo means producing a new array, so every row re-renders.
 With keyed maps, each row subscribes to its own slice and re-renders alone:
 
 ```tsx
-const stats = useAppSelector((s) => s.tracked.stats[id]);
+const stats = useTrackedStore((state) => state.stats[id]);
 ```
 
 ### Status as a discriminated union
@@ -151,6 +151,18 @@ library rather than by hand.
 What's here is effectively a small, purpose-built version of that. Zustand keeps the
 client state it's genuinely good at: the tracked list and its ordering.
 
+### Last commit date needs a second request
+
+The repo endpoint gives stars and open issues in one call, but its `pushed_at` field
+is the last push to any branch — not the same as the last commit. Getting the real
+value means `/repos/{owner}/{repo}/commits?per_page=1`.
+
+Both calls fire in parallel since neither depends on the other, and the commits call
+is wrapped so it can fail alone. An empty repository has no commits at all, and a
+rate-limit response on one request shouldn't throw away a successful response to the
+other. When it's unavailable the UI shows last-push instead, labelled as such, rather
+than silently presenting one as the other.
+
 ### Why Vite rather than Next.js
 
 Nothing here needs a server. The app is a client-side dashboard against a public API
@@ -172,10 +184,12 @@ failure so users aren't retrying into the same wall.
   this to 5,000/hour and would be the first change for real use.
 - **No pagination** — search returns the top 20 by stars. The API supports more; it
   wasn't required here.
-- **`pushed_at` is used for "last commit date."** It's the last push to any branch,
-  which is what the search endpoint gives without a second request per repo. A true
-  last-commit date would need `/commits` per repo, which the rate limit doesn't
-  allow at this scale.
+- **Two API calls per refresh.** `pushed_at` from the repo endpoint is not the last
+  commit date — a push can contain commits authored earlier, and force-pushes move it
+  without a new commit — so the commits endpoint is queried alongside it. They run in
+  parallel, and the commit call is allowed to fail independently: an empty repo has no
+  commits, and one failure shouldn't discard stars and issues that were fetched
+  successfully. The card falls back to last-push with a label saying so.
 - **Tracked repos are per-browser**, via `localStorage`. No accounts, no sync.
 - **No tests.** With more time: unit tests for the reducers and persistence
   validation, and a Playwright test covering search → track → refresh → persist.

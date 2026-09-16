@@ -37,7 +37,17 @@ export type RepoStatsStatus =
 export interface RepoStats {
   stargazers_count: number;
   open_issues_count: number;
+  /** Last push to any branch — cheap, available on the repo endpoint. */
   pushed_at: string;
+  /**
+   * Actual last commit date, from the commits endpoint.
+   *
+   * `pushed_at` is not the same thing: a push can contain commits authored
+   * earlier, and force-pushes or branch deletions move it without a new commit.
+   * Null when the commits call fails or the repo is empty — the rest of the
+   * stats are still usable, so one failure shouldn't discard them.
+   */
+  lastCommitDate: string | null;
 }
 
 /** The minimal shape we persist. Stats are always re-fetched, never restored. */
