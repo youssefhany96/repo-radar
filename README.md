@@ -169,6 +169,18 @@ rate-limit response on one request shouldn't throw away a successful response to
 other. When it's unavailable the UI shows last-push instead, labelled as such, rather
 than silently presenting one as the other.
 
+### Tracking fetches the commit date in the background
+
+The search endpoint returns stars and issues but not commit data, so tracking a repo
+seeds the row from the search result and then refreshes it to fill in the real
+last-commit date.
+
+That background refresh is deliberately *silent*: it doesn't set a loading state.
+Replacing numbers that are already on screen with a spinner would be a downgrade
+rather than feedback, and if it fails the seeded stats stay — we simply couldn't add
+the commit date yet. Manual refresh, where the user asked for it and expects to see
+something happen, does show loading and does surface errors.
+
 ### Chart dependency lives in the charts package
 
 `recharts` is a dependency of `@repo-radar/charts` only — the app doesn't declare it

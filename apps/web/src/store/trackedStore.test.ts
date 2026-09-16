@@ -31,13 +31,45 @@ describe("trackedStore", () => {
   afterEach(() => vi.unstubAllGlobals());
 
   it("tracks a repo and seeds stats from the search result", () => {
+    // track() also kicks off a background refresh to fetch the real commit
+    // date; stub fetch so the test doesn't hit the network.
+    vi.stubGlobal("fetch", vi.fn(() => new Promise(() => {})));
+
     useTrackedStore.getState().track(repo(1, "facebook/react"));
 
     const s = useTrackedStore.getState();
     expect(s.order).toEqual([1]);
     expect(s.repos[1]?.full_name).toBe("facebook/react");
-    // Seeded so the row isn't blank before its first refresh
+    // Seeded from the search result so the row isn't blank while the
+    // background refresh is in flight
     expect(s.stats[1]).toMatchObject({ status: "success" });
+  });
+
+  it("fetches the real commit date in the background when tracking", async () => {
+    vi.stubGlobal("fetch", vi.fn((input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("/commits")) {
+        return Promise.resolve(new Response(
+          JSON.stringify([{ commit: { committer: { date: "2026-09-16T09:00:00Z" } } }]),
+          { status: 200 },
+        ));
+      }
+      return Promise.resolve(new Response(
+        JSON.stringify({
+          stargazers_count: 150,
+          open_issues_count: 3,
+          pushed_at: "2026-09-16T09:00:05Z",
+        }),
+        { status: 200 },
+      ));
+    }));
+
+    useTrackedStore.getState().track(repo(1, "facebook/react"));
+    // Search only provides pushed_at — the commit date arrives afterwards
+    await vi.waitFor(() => {
+      const st = useTrackedStore.getState().stats[1];
+      expect(st?.status === "success" && st.data.lastCommitDate).toBe("2026-09-16T09:00:00Z");
+    });
   });
 
   it("ignores a repo that is already tracked", () => {

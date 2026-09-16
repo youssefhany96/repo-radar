@@ -14,7 +14,7 @@ interface StarsBarChartProps {
 const compact = new Intl.NumberFormat("en", { notation: "compact" });
 
 export function StarsBarChart({
-  data, title, height = 320, emptyMessage = "Nothing to chart yet.",
+  data, title, height = 260, emptyMessage = "Nothing to chart yet.",
 }: StarsBarChartProps) {
   const theme = useTheme();
 
@@ -49,7 +49,14 @@ export function StarsBarChart({
               borderRadius: 8,
             }}
           />
-          <Bar dataKey="value" fill={theme.palette.primary.main} radius={[4, 4, 0, 0]} />
+          <Bar
+            dataKey="value"
+            fill={theme.palette.primary.main}
+            radius={[4, 4, 0, 0]}
+            /* Without a cap, two repos produce two enormous blocks — Recharts
+               spreads bars to fill the available width. */
+            maxBarSize={72}
+          />
         </BarChart>
       </ResponsiveContainer>
     </Box>

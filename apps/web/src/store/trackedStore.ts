@@ -26,7 +26,9 @@ interface TrackedState {
 
   track: (repo: Repository) => void;
   untrack: (id: number) => void;
-  refresh: (id: number) => Promise<void>;
+  /** `silent` skips the loading state — used for background upgrades where
+   *  stats are already on screen and blanking them would be a regression. */
+  refresh: (id: number, options?: { silent?: boolean }) => Promise<void>;
   refreshAll: () => Promise<void>;
 }
 
@@ -39,6 +41,9 @@ export const useTrackedStore = create<TrackedState>()(
 
       track: (r) => {
         if (get().repos[r.id]) return;
+        // Search gives stars and issues but not the commit date, so the row is
+        // seeded from the search result and then refreshed in the background to
+        // fill in the real last-commit date.
         set((s) => ({
           repos: {
             ...s.repos,
@@ -63,13 +68,16 @@ export const useTrackedStore = create<TrackedState>()(
                 stargazers_count: r.stargazers_count,
                 open_issues_count: r.open_issues_count,
                 pushed_at: r.pushed_at,
-                // Search doesn't return commit data — filled in on first refresh
                 lastCommitDate: null,
               },
               fetchedAt: Date.now(),
             },
           },
         }));
+
+        // Fire-and-forget: the row is already usable, this just upgrades
+        // last-push to the real last-commit date when it arrives.
+        void get().refresh(r.id, { silent: true });
       },
 
       untrack: (id) =>
@@ -79,11 +87,15 @@ export const useTrackedStore = create<TrackedState>()(
           return { repos, stats, order: s.order.filter((x) => x !== id) };
         }),
 
-      refresh: async (id) => {
+      refresh: async (id, options) => {
         const repo = get().repos[id];
         if (!repo) return;
 
-        set((s) => ({ stats: { ...s.stats, [id]: { status: "loading" } } }));
+        // A silent refresh leaves the existing stats visible. Showing a spinner
+        // over numbers we already have would be a downgrade, not feedback.
+        if (!options?.silent) {
+          set((s) => ({ stats: { ...s.stats, [id]: { status: "loading" } } }));
+        }
 
         try {
           const data: RepoStats = await getRepoStats(repo.full_name);
@@ -94,6 +106,9 @@ export const useTrackedStore = create<TrackedState>()(
             },
           }));
         } catch (e) {
+          // A failed background upgrade keeps what's on screen — the seeded
+          // stats are still valid, we just couldn't add the commit date.
+          if (options?.silent) return;
           set((s) => ({
             stats: {
               ...s.stats,
