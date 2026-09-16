@@ -42,6 +42,9 @@ export function StarsBarChart({
             tickFormatter={(v: number) => compact.format(v)}
           />
           <Tooltip
+            /* Recharts' default hover cursor is opaque light grey, which reads
+               as a rendering artefact on a dark background. */
+            cursor={{ fill: theme.palette.action.hover }}
             formatter={(value) => [Number(value).toLocaleString(), "Stars"]}
             contentStyle={{
               background: theme.palette.background.paper,
