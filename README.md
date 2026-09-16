@@ -2,7 +2,8 @@
 
 Search GitHub repositories, track the ones you care about, and monitor their stats.
 
-**Live:** _(add Vercel URL after deploying)_
+**Live:** https://repo-radar-six.vercel.app
+**Repository:** https://github.com/youssefhany96/repo-radar
 
 ---
 
