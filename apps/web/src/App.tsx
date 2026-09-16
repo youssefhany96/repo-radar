@@ -64,11 +64,15 @@ export default function App() {
         <Tabs value={tab} onChange={(_, v: number) => setTab(v)} sx={{ mb: 3 }}>
           <Tab label="Search" />
           <Tab
+            /* Padding on the tab rather than negative offset on the badge —
+               the tab clips its overflow, so pushing the badge outside its
+               bounds cuts it off. */
+            sx={{ pr: 3.5 }}
             label={
               <Badge
                 badgeContent={trackedCount}
                 color="primary"
-                sx={{ "& .MuiBadge-badge": { right: -14, top: 2 } }}
+                sx={{ "& .MuiBadge-badge": { right: -18, top: 4 } }}
               >
                 Tracked
               </Badge>
