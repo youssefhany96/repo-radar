@@ -25,7 +25,7 @@ export default function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <AppBar position="sticky" color="default" elevation={0}
+      <AppBar position="sticky" color=efault" elevation={0}
               sx={{ borderBottom: 1, borderColor: "divider" }}>
         <Toolbar>
           <RadarIcon sx={{ mr: 1.5, color: "primary.main" }} />

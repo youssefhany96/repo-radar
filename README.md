@@ -233,6 +233,13 @@ Component tests query by role and visible text rather than test IDs, so they bre
 when the feature breaks and survive a refactor. Deliberately not tested: that MUI
 renders a button, or that a prop reaches a child.
 
+`RepoCard.test.tsx` sits in the app rather than in `packages/ui` on purpose. It
+renders the component the way the app consumes it — imported from `@repo-radar/ui`,
+given the same status shapes the store produces — so it's a consumer contract test
+rather than a unit test of the package in isolation. Tests live next to the code they
+exercise; there's no `unit/` or `integration/` split, because fourteen tests don't
+need one.
+
 ## Optional extras included
 
 - Light/dark theme, defaulting to system preference
