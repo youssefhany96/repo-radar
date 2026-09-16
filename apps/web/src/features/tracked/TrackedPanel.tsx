@@ -1,38 +1,38 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { Stack, Button, Box, Paper } from "@mui/material";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import { EmptyState } from "@repo-radar/ui";
 import { StarsBarChart, type ChartDatum } from "@repo-radar/charts";
-import { useAppDispatch, useAppSelector } from "../../store";
-import { refreshRepo } from "../../store/trackedSlice";
+import { useTrackedStore } from "../../store/trackedStore";
 import { TrackedRepoRow } from "./TrackedRepoRow";
 
 export function TrackedPanel() {
-  const dispatch = useAppDispatch();
-  const order = useAppSelector((s) => s.tracked.order);
-  const repos = useAppSelector((s) => s.tracked.repos);
-  const stats = useAppSelector((s) => s.tracked.stats);
+  const order = useTrackedStore((s) => s.order);
+  const repos = useTrackedStore((s) => s.repos);
+  const stats = useTrackedStore((s) => s.stats);
+  const refresh = useTrackedStore((s) => s.refresh);
+  const refreshAll = useTrackedStore((s) => s.refreshAll);
 
   const anyLoading = order.some((id) => stats[id]?.status === "loading");
+  const hydrated = useRef(false);
 
-  // On mount, fetch stats for anything restored from localStorage as `idle`.
-  // Sequential rather than parallel: GitHub allows 60 unauthenticated requests
-  // per hour, and firing twenty at once is the fastest way to hit that wall.
+  // Repos restored from localStorage come back as `idle` — fetch their stats
+  // once on mount. Sequential, to stay inside GitHub's rate limit.
   useEffect(() => {
+    if (hydrated.current) return;
     const stale = order.filter((id) => stats[id]?.status === "idle");
     if (stale.length === 0) return;
+    hydrated.current = true;
 
     let cancelled = false;
-    (async () => {
+    void (async () => {
       for (const id of stale) {
         if (cancelled) return;
-        const repo = repos[id];
-        if (repo) await dispatch(refreshRepo({ id, full_name: repo.full_name }));
+        await refresh(id);
       }
     })();
     return () => { cancelled = true; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [order, stats, refresh]);
 
   const chartData: ChartDatum[] = useMemo(
     () =>
@@ -47,13 +47,6 @@ export function TrackedPanel() {
         .sort((a, b) => b.value - a.value),
     [order, stats, repos],
   );
-
-  const refreshAll = async () => {
-    for (const id of order) {
-      const repo = repos[id];
-      if (repo) await dispatch(refreshRepo({ id, full_name: repo.full_name }));
-    }
-  };
 
   if (order.length === 0) {
     return (
@@ -77,7 +70,7 @@ export function TrackedPanel() {
       <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
         <Button
           size="small" startIcon={<RefreshIcon />}
-          onClick={refreshAll} disabled={anyLoading}
+          onClick={() => void refreshAll()} disabled={anyLoading}
         >
           Refresh all
         </Button>

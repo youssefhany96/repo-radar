@@ -15,14 +15,13 @@
     "@emotion/styled": "^11.14.1",
     "@mui/icons-material": "^9.4.0",
     "@mui/material": "^9.4.0",
-    "@reduxjs/toolkit": "^2.12.0",
     "@repo-radar/charts": "workspace:*",
     "@repo-radar/types": "workspace:*",
     "@repo-radar/ui": "workspace:*",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
-    "react-redux": "^9.3.0",
-    "recharts": "^3.10.1"
+    "recharts": "^3.10.1",
+    "zustand": "^5.0.15"
   },
   "devDependencies": {
     "@types/node": "^24.13.3",

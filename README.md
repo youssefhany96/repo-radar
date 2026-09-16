@@ -97,11 +97,21 @@ happen — loading *and* error — and then every component has to guard against
 A union makes the invalid state unrepresentable: the status determines exactly what
 data exists.
 
-### Persistence in middleware, not the reducer
+### Why Zustand over Redux Toolkit
 
-Reducers must stay pure. Writing to `localStorage` from one is a side effect that
-breaks time-travel debugging and makes the reducer untestable without a DOM.
-Middleware is the correct seam.
+Both were permitted. Zustand won on volume: the same behaviour — keyed per-repo
+state, async refresh, persistence — in roughly half the code, with no provider, no
+action types and no thunk boilerplate. Redux Toolkit earns its structure on large
+teams with deeply shared state; this is one feature with two stores, and the
+ceremony would have been cost without benefit.
+
+The one thing Redux gives cheaply is devtools time-travel. Zustand supports the same
+devtools middleware if that became valuable.
+
+### Persistence via middleware, not inside an action
+
+Zustand's `persist` middleware handles serialisation, with `partialize` controlling
+what's written.
 
 **Only repo identity is persisted, never stats.** Stats from a previous session are
 stale by definition, and showing stale numbers as current is worse than showing
@@ -122,12 +132,30 @@ timers next to network code.
 
 ### Race conditions
 
-`createAsyncThunk` provides an `AbortSignal` that fires when the thunk is superseded,
-and the effect aborts the previous request on query change. Without it, a slow
-request for "re" can resolve after a fast one for "react" and overwrite the results.
+Each search aborts the previous one via `AbortController`, held in the store rather
+than in the component. Without it a slow request for "re" can resolve after a fast
+one for "react" and overwrite the newer results.
 
-Aborted requests are checked in the rejected case so a cancellation isn't shown to
-the user as a failure.
+An aborted request is checked before writing state, so a cancellation is never shown
+to the user as a failure — because it isn't one.
+
+### On TanStack Query
+
+The task specified Redux Toolkit or Zustand, so state is held in Zustand. In
+production I'd reach for TanStack Query for the server-state half: per-repo caching,
+stale-while-revalidate, deduplication and request cancellation are exactly this
+problem, and each tracked repo would be its own query key with its own status —
+which is precisely the "independent state per repo" requirement, handled by the
+library rather than by hand.
+
+What's here is effectively a small, purpose-built version of that. Zustand keeps the
+client state it's genuinely good at: the tracked list and its ordering.
+
+### Why Vite rather than Next.js
+
+Nothing here needs a server. The app is a client-side dashboard against a public API
+— no SEO surface, no server-side data fetching, no API routes. Next would add SSR
+setup (including MUI's emotion cache) to solve problems this app doesn't have.
 
 ### Sequential refresh, not parallel
 

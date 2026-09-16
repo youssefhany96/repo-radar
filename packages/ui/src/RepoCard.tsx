@@ -46,11 +46,11 @@ export function RepoCard({
   return (
     <Card variant="outlined">
       <CardContent>
-        <Stack direction="row" spacing={2} alignItems="flex-start">
+        <Stack direction="row" spacing={2} sx={{ alignItems: "flex-start" }}>
           <Box sx={{ flex: 1, minWidth: 0 }}>
             <Link
               href={htmlUrl} target="_blank" rel="noopener noreferrer"
-              underline="hover" variant="subtitle1" fontWeight={600}
+              underline="hover" variant="subtitle1" sx={{ fontWeight: 600 }}
             >
               {fullName}
             </Link>
@@ -63,7 +63,7 @@ export function RepoCard({
               {description ?? "No description"}
             </Typography>
 
-            <Stack direction="row" spacing={1} sx={{ mt: 1.5 }} flexWrap="wrap" useFlexGap>
+            <Stack direction="row" spacing={1} useFlexGap sx={{ mt: 1.5, flexWrap: "wrap" }}>
               {language && (
                 <StatChip
                   icon={<Box sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: "primary.main", ml: 1 }} />}

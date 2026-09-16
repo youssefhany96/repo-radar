@@ -1,35 +1,33 @@
 import { useEffect } from "react";
 import { Stack, Typography, CircularProgress, Box } from "@mui/material";
 import { RepoCard, SearchField, EmptyState, ErrorState } from "@repo-radar/ui";
-import { useAppDispatch, useAppSelector } from "../../store";
-import { setQuery, search } from "../../store/searchSlice";
-import { track, untrack } from "../../store/trackedSlice";
+import { useSearchStore } from "../../store/searchStore";
+import { useTrackedStore } from "../../store/trackedStore";
 import { useDebounced } from "../../hooks/useDebounced";
 
 export function SearchPanel() {
-  const dispatch = useAppDispatch();
-  const { query, results, status, error } = useAppSelector((s) => s.search);
-  const trackedIds = useAppSelector((s) => s.tracked.repos);
+  const { query, results, status, error, setQuery, run } = useSearchStore();
+  const repos = useTrackedStore((s) => s.repos);
+  const track = useTrackedStore((s) => s.track);
+  const untrack = useTrackedStore((s) => s.untrack);
+
   const debouncedQuery = useDebounced(query, 400);
 
   useEffect(() => {
-    const promise = dispatch(search(debouncedQuery));
-    // Aborts the in-flight request when the query changes — an older search
-    // can't resolve after a newer one and overwrite the results.
-    return () => promise.abort();
-  }, [debouncedQuery, dispatch]);
+    void run(debouncedQuery);
+  }, [debouncedQuery, run]);
 
   return (
     <Stack spacing={2}>
       <SearchField
         value={query}
-        onChange={(v) => dispatch(setQuery(v))}
+        onChange={setQuery}
         loading={status === "loading"}
         placeholder="Search GitHub repositories…"
       />
 
       {status === "error" && error && (
-        <ErrorState message={error} onRetry={() => dispatch(search(debouncedQuery))} />
+        <ErrorState message={error} onRetry={() => void run(debouncedQuery)} />
       )}
 
       {status === "idle" && !query && (
@@ -62,9 +60,9 @@ export function SearchPanel() {
                 description={repo.description}
                 language={repo.language}
                 htmlUrl={repo.html_url}
-                isTracked={Boolean(trackedIds[repo.id])}
-                onTrack={() => dispatch(track(repo))}
-                onUntrack={() => dispatch(untrack(repo.id))}
+                isTracked={Boolean(repos[repo.id])}
+                onTrack={() => track(repo)}
+                onUntrack={() => untrack(repo.id)}
               />
             ))}
           </Stack>

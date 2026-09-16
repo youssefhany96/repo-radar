@@ -6,7 +6,7 @@ import {
 import DarkIcon from "@mui/icons-material/DarkMode";
 import LightIcon from "@mui/icons-material/LightMode";
 import RadarIcon from "@mui/icons-material/Radar";
-import { useAppSelector } from "./store";
+import { useTrackedStore } from "./store/trackedStore";
 import { SearchPanel } from "./features/search/SearchPanel";
 import { TrackedPanel } from "./features/tracked/TrackedPanel";
 
@@ -14,7 +14,7 @@ export default function App() {
   const prefersDark = useMediaQuery("(prefers-color-scheme: dark)");
   const [mode, setMode] = useState<"light" | "dark">(prefersDark ? "dark" : "light");
   const [tab, setTab] = useState(0);
-  const trackedCount = useAppSelector((s) => s.tracked.order.length);
+  const trackedCount = useTrackedStore((s) => s.order.length);
 
   const theme = createTheme({
     palette: { mode, primary: { main: "#2b5cff" } },

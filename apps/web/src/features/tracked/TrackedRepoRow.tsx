@@ -1,19 +1,19 @@
 import { memo } from "react";
 import { RepoCard } from "@repo-radar/ui";
-import { useAppDispatch, useAppSelector } from "../../store";
-import { refreshRepo, untrack } from "../../store/trackedSlice";
+import { useTrackedStore } from "../../store/trackedStore";
 
 /**
- * One row, subscribed only to its own slice of state.
+ * One row, subscribed only to its own slice.
  *
- * This is the point of keying stats by id: refreshing one repo re-renders one
- * row, not the list. With an array of repos-with-stats, every refresh would
- * produce a new array and re-render everything.
+ * Selecting `stats[id]` rather than the whole stats object means refreshing one
+ * repo re-renders one row. That's what makes per-repo loading state real rather
+ * than merely visual.
  */
 export const TrackedRepoRow = memo(function TrackedRepoRow({ id }: { id: number }) {
-  const dispatch = useAppDispatch();
-  const repo = useAppSelector((s) => s.tracked.repos[id]);
-  const stats = useAppSelector((s) => s.tracked.stats[id]);
+  const repo = useTrackedStore((s) => s.repos[id]);
+  const stats = useTrackedStore((s) => s.stats[id]);
+  const untrack = useTrackedStore((s) => s.untrack);
+  const refresh = useTrackedStore((s) => s.refresh);
 
   if (!repo) return null;
 
@@ -25,8 +25,8 @@ export const TrackedRepoRow = memo(function TrackedRepoRow({ id }: { id: number 
       htmlUrl={repo.html_url}
       stats={stats}
       isTracked
-      onUntrack={() => dispatch(untrack(id))}
-      onRefresh={() => dispatch(refreshRepo({ id, full_name: repo.full_name }))}
+      onUntrack={() => untrack(id)}
+      onRefresh={() => void refresh(id)}
     />
   );
 });
