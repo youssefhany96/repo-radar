@@ -18,8 +18,9 @@ pnpm build        # production build
 pnpm typecheck    # type-check every package
 ```
 
-Requires Node 20+ and pnpm 9+. No environment variables — the GitHub REST API is
-used unauthenticated.
+Requires Node 20+ and pnpm 11+ (or Corepack, which will pick up the `packageManager`
+field automatically). No environment variables — the GitHub REST API is used
+unauthenticated.
 
 ---
 
@@ -72,11 +73,13 @@ array:
 { repos: Record<number, TrackedRepo>, order: number[], stats: Record<number, RepoStatsStatus> }
 ```
 
-The obvious alternative — one array of repos with stats attached — makes
-"independent loading and error state per repo" only *appear* to work. Refreshing
-one repo means producing a new array, so every row re-renders.
+A keyed structure makes per-repository subscriptions straightforward: refreshing one
+repo replaces one entry rather than the whole collection, so a row can subscribe to
+exactly its own slice. An array of repos-with-stats can be made to work with careful
+selectors and memoisation, but the keyed shape makes the cheap path the default one
+rather than something you have to remember to do.
 
-With keyed maps, each row subscribes to its own slice and re-renders alone:
+Each row subscribes to its own entry:
 
 ```tsx
 const stats = useTrackedStore((state) => state.stats[id]);
@@ -162,6 +165,17 @@ is wrapped so it can fail alone. An empty repository has no commits at all, and 
 rate-limit response on one request shouldn't throw away a successful response to the
 other. When it's unavailable the UI shows last-push instead, labelled as such, rather
 than silently presenting one as the other.
+
+### Chart dependency lives in the charts package
+
+`recharts` is a dependency of `@repo-radar/charts` only — the app doesn't declare it
+and never imports it. That's the practical test of whether the package boundary is
+real: the app asks for a chart and passes labelled numbers, and the charting library
+could be swapped for Chart.js or a hand-rolled SVG without the app changing at all.
+
+Shared libraries that *do* cross the boundary — React, MUI, emotion — are kept on a
+single version across the workspace. Two copies of MUI resolving in one build gives
+you two theme contexts and a build that fails in ways that don't point at the cause.
 
 ### Why Vite rather than Next.js
 

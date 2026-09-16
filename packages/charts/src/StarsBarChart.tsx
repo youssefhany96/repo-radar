@@ -42,7 +42,7 @@ export function StarsBarChart({
             tickFormatter={(v: number) => compact.format(v)}
           />
           <Tooltip
-            formatter={(v: number) => [v.toLocaleString(), "Stars"]}
+            formatter={(value) => [Number(value).toLocaleString(), "Stars"]}
             contentStyle={{
               background: theme.palette.background.paper,
               border: `1px solid ${theme.palette.divider}`,
