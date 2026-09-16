@@ -17,6 +17,7 @@ pnpm dev          # http://localhost:5173
 pnpm build        # production build
 pnpm typecheck    # type-check every package
 pnpm test         # run the test suite
+pnpm lint         # lint every package
 ```
 
 Requires Node 20+ and pnpm 11+ (or Corepack, which will pick up the `packageManager`
