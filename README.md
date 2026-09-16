@@ -16,6 +16,7 @@ pnpm dev          # http://localhost:5173
 ```bash
 pnpm build        # production build
 pnpm typecheck    # type-check every package
+pnpm test         # run the test suite
 ```
 
 Requires Node 20+ and pnpm 11+ (or Corepack, which will pick up the `packageManager`
@@ -205,8 +206,31 @@ failure so users aren't retrying into the same wall.
   commits, and one failure shouldn't discard stars and issues that were fetched
   successfully. The card falls back to last-push with a label saying so.
 - **Tracked repos are per-browser**, via `localStorage`. No accounts, no sync.
-- **No tests.** With more time: unit tests for the reducers and persistence
-  validation, and a Playwright test covering search → track → refresh → persist.
+- **No end-to-end tests.** The unit and component tests cover the logic and render
+  states; a Playwright test covering search → track → refresh → reload would be the
+  next addition.
+
+## Testing
+
+`pnpm test` — 14 tests across the API layer, the store, and the card component.
+
+They're deliberately few and aimed at behaviour that could actually break, rather
+than at a coverage number. The three that earn their place:
+
+**The commit fallback.** When `/commits` fails — an empty repository, or a rate
+limit — the stats that *were* fetched must survive, and the UI must say "last push"
+rather than silently presenting a push date as a commit date. Tested at both layers.
+
+**Per-repo independence.** One repo's refresh failing must leave another repo's
+successful state untouched. That's the requirement the keyed store shape exists to
+satisfy, so it's worth asserting rather than assuming.
+
+**What is and isn't persisted.** Repo identity is written to `localStorage`; stats
+deliberately are not, because stale numbers shown as current are worse than none.
+
+Component tests query by role and visible text rather than test IDs, so they break
+when the feature breaks and survive a refactor. Deliberately not tested: that MUI
+renders a button, or that a prop reaches a child.
 
 ## Optional extras included
 
