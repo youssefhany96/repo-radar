@@ -49,7 +49,7 @@ export const useSearchStore = create<SearchState>()((set) => ({
       if (controller.signal.aborted) return;
       set({ status: "success", results: res.items });
     } catch (e) {
-      if (controller.signal.aborted) return;   // superseded, not a failure
+      if (controller.signal.aborted) return; // superseded, not a failure
       set({
         status: "error",
         error: e instanceof Error ? e.message : "Search failed",

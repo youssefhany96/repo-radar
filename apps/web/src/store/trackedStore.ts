@@ -1,6 +1,11 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-import type { Repository, RepoStats, RepoStatsStatus, TrackedRepo } from "@repo-radar/types";
+import type {
+  Repository,
+  RepoStats,
+  RepoStatsStatus,
+  TrackedRepo,
+} from "@repo-radar/types";
 import { getRepoStats } from "../api/github";
 
 /**
@@ -110,7 +115,7 @@ export const useTrackedStore = create<TrackedState>()(
       },
     }),
     {
-      name: "repo-radar:tracked:v1",   // versioned, so the shape can change later
+      name: "repo-radar:tracked:v1", // versioned, so the shape can change later
       storage: createJSONStorage(() => localStorage),
 
       /**
