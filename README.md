@@ -181,6 +181,22 @@ rather than feedback, and if it fails the seeded stats stay — we simply couldn
 the commit date yet. Manual refresh, where the user asked for it and expects to see
 something happen, does show loading and does surface errors.
 
+### What lives in a store, and what doesn't
+
+Zustand holds three things: tracked repos, search state, and theme preference.
+The active tab is plain `useState` in `App`, because nothing else reads it and
+putting it in a store would be indirection with no benefit.
+
+Theme is the interesting case. It started as local state and had two defects worth
+naming: `useState(prefersDark ? …)` captures the system preference on first render
+only, so changing the OS theme with the app open did nothing — and the choice was
+lost on reload. It's now a store where `null` means "no explicit choice, follow the
+system", so the app tracks OS changes live until the user toggles, and remembers the
+choice afterwards.
+
+The rule: lift state when something else needs it, or when it has to outlive the
+component. Not because a store feels tidier.
+
 ### Chart dependency lives in the charts package
 
 `recharts` is a dependency of `@repo-radar/charts` only — the app doesn't declare it

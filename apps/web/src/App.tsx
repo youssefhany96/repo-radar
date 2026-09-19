@@ -18,14 +18,19 @@ import DarkIcon from "@mui/icons-material/DarkMode";
 import LightIcon from "@mui/icons-material/LightMode";
 import RadarIcon from "@mui/icons-material/Radar";
 import { useTrackedStore } from "./store/trackedStore";
+import { useThemeStore } from "./store/themeStore";
 import { SearchPanel } from "./features/search/SearchPanel";
 import { TrackedPanel } from "./features/tracked/TrackedPanel";
 
 export default function App() {
+  // useMediaQuery re-renders when the OS theme changes, so an app following
+  // the system stays in sync rather than being stuck on its initial value.
   const prefersDark = useMediaQuery("(prefers-color-scheme: dark)");
-  const [mode, setMode] = useState<"light" | "dark">(
-    prefersDark ? "dark" : "light",
-  );
+  const storedMode = useThemeStore((s) => s.mode);
+  const toggleMode = useThemeStore((s) => s.toggle);
+
+  // No stored choice means follow the system.
+  const mode = storedMode ?? (prefersDark ? "dark" : "light");
   const [tab, setTab] = useState(0);
   const trackedCount = useTrackedStore((s) => s.order.length);
 
@@ -52,7 +57,7 @@ export default function App() {
             Repo Radar
           </Typography>
           <IconButton
-            onClick={() => setMode((m) => (m === "light" ? "dark" : "light"))}
+            onClick={() => toggleMode(prefersDark)}
             aria-label="Toggle theme"
           >
             {mode === "light" ? <DarkIcon /> : <LightIcon />}
