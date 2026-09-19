@@ -6,6 +6,7 @@ import StarIcon from "@mui/icons-material/Star";
 import BugIcon from "@mui/icons-material/BugReport";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import DeleteIcon from "@mui/icons-material/Delete";
+import CheckIcon from "@mui/icons-material/CheckCircle";
 import AddIcon from "@mui/icons-material/AddCircle";
 import type { RepoStatsStatus } from "@repo-radar/types";
 import { StatChip } from "./StatChip";
@@ -21,6 +22,12 @@ interface RepoCardProps {
   onTrack?: () => void;
   onUntrack?: () => void;
   onRefresh?: () => void;
+  /**
+   * Search results and the tracked list use the same card but need different
+   * affordances: in search, "tracked" is a state to confirm; in the tracked
+   * list it's an action to undo.
+   */
+  variant?: "search" | "tracked";
 }
 
 const fmt = new Intl.NumberFormat("en", { notation: "compact" });
@@ -41,7 +48,7 @@ function relativeTime(iso: string): string {
  */
 export function RepoCard({
   fullName, description, language, htmlUrl,
-  stats, isTracked, onTrack, onUntrack, onRefresh,
+  stats, isTracked, onTrack, onUntrack, onRefresh, variant = "tracked",
 }: RepoCardProps) {
   return (
     <Card variant="outlined">
@@ -134,9 +141,18 @@ export function RepoCard({
               </Tooltip>
             )}
             {isTracked ? (
-              <Tooltip title="Untrack">
-                <IconButton size="small" onClick={onUntrack} aria-label={`Untrack ${fullName}`}>
-                  <DeleteIcon fontSize="small" />
+              <Tooltip title={variant === "search" ? "Already tracked — click to remove" : "Untrack"}>
+                <IconButton
+                  size="small"
+                  onClick={onUntrack}
+                  color={variant === "search" ? "success" : "default"}
+                  aria-label={`Untrack ${fullName}`}
+                >
+                  {variant === "search" ? (
+                    <CheckIcon fontSize="small" />
+                  ) : (
+                    <DeleteIcon fontSize="small" />
+                  )}
                 </IconButton>
               </Tooltip>
             ) : (

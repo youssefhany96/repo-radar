@@ -16,6 +16,15 @@ export function SearchField({ value, onChange, loading, placeholder }: SearchFie
   return (
     <TextField
       fullWidth
+      /* Chrome paints its own opaque background on autofilled inputs, which
+         ignores the theme and looks broken in dark mode. */
+      sx={{
+        "& input:-webkit-autofill": {
+          WebkitBoxShadow: "0 0 0 100px transparent inset",
+          WebkitTextFillColor: "inherit",
+          transition: "background-color 5000s ease-in-out 0s",
+        },
+      }}
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder ?? "Search repositories…"}

@@ -60,6 +60,7 @@ export function SearchPanel() {
                 description={repo.description}
                 language={repo.language}
                 htmlUrl={repo.html_url}
+                variant="search"
                 isTracked={Boolean(repos[repo.id])}
                 onTrack={() => track(repo)}
                 onUntrack={() => untrack(repo.id)}
