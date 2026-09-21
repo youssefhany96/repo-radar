@@ -76,17 +76,9 @@ array:
 { repos: Record<number, TrackedRepo>, order: number[], stats: Record<number, RepoStatsStatus> }
 ```
 
-A keyed structure makes per-repository subscriptions straightforward: refreshing one
-repo replaces one entry rather than the whole collection, so a row can subscribe to
-exactly its own slice. An array of repos-with-stats can be made to work with careful
-selectors and memoisation, but the keyed shape makes the cheap path the default one
-rather than something you have to remember to do.
-
-Each row subscribes to its own entry:
-
-```tsx
-const stats = useTrackedStore((state) => state.stats[id]);
-```
+A keyed structure makes per-repository subscriptions straightforward. Each row
+subscribes to its own stats entry, so refreshing one repository doesn't require
+replacing the tracked-repository collection.
 
 ### Status as a discriminated union
 
@@ -105,14 +97,9 @@ data exists.
 
 ### Why Zustand over Redux Toolkit
 
-Both were permitted. Zustand won on volume: the same behaviour — keyed per-repo
-state, async refresh, persistence — in roughly half the code, with no provider, no
-action types and no thunk boilerplate. Redux Toolkit earns its structure on large
-teams with deeply shared state; this is one feature with two stores, and the
-ceremony would have been cost without benefit.
-
-The one thing Redux gives cheaply is devtools time-travel. Zustand supports the same
-devtools middleware if that became valuable.
+Both were permitted. For this scope, Zustand provides the required keyed state, async
+actions, and persistence with less setup. Redux Toolkit would become more attractive
+as state interactions, tooling requirements, and team conventions grow.
 
 ### Persistence via middleware, not inside an action
 
@@ -126,76 +113,35 @@ none — so restored repos start as `idle` and fetch fresh.
 `localStorage` reads are validated rather than cast, because anything could be in
 there: another tab, an older schema version, a user editing it by hand.
 
-### Search debounces the value, not the request
+### Search and race conditions
 
-```ts
-const debouncedQuery = useDebounced(query, 400);
-```
+The input updates immediately while a 400ms debounced value triggers the search.
 
-The input is driven by immediate state so typing stays responsive; only the
-debounced value triggers a fetch. Debouncing the request itself would mean managing
-timers next to network code.
+Each new search aborts the previous request with `AbortController`, preventing a
+slower stale response from overwriting newer results. Aborted requests are ignored
+rather than surfaced as errors, because a cancellation isn't a failure.
 
-### Race conditions
+### Last commit date
 
-Each search aborts the previous one via `AbortController`, held in the store rather
-than in the component. Without it a slow request for "re" can resolve after a fast
-one for "react" and overwrite the newer results.
+GitHub's repository endpoint exposes `pushed_at`, which is the last push rather than
+necessarily the latest commit. The app therefore requests `/commits?per_page=1`
+alongside repository stats.
 
-An aborted request is checked before writing state, so a cancellation is never shown
-to the user as a failure — because it isn't one.
+The requests run in parallel and the commit lookup may fail independently. When
+tracking from search, existing stars and issues stay visible while the commit date is
+fetched in the background; if unavailable, the UI explicitly falls back to last-push.
 
-### On TanStack Query
+### State ownership
 
-The task specified Redux Toolkit or Zustand, so state is held in Zustand. In
-production I'd reach for TanStack Query for the server-state half: per-repo caching,
-stale-while-revalidate, deduplication and request cancellation are exactly this
-problem, and each tracked repo would be its own query key with its own status —
-which is precisely the "independent state per repo" requirement, handled by the
-library rather than by hand.
+Zustand holds tracked repos, search state, and theme preference. The active tab is
+plain `useState`, because nothing else reads it.
 
-What's here is effectively a small, purpose-built version of that. Zustand keeps the
-client state it's genuinely good at: the tracked list and its ordering.
-
-### Last commit date needs a second request
-
-The repo endpoint gives stars and open issues in one call, but its `pushed_at` field
-is the last push to any branch — not the same as the last commit. Getting the real
-value means `/repos/{owner}/{repo}/commits?per_page=1`.
-
-Both calls fire in parallel since neither depends on the other, and the commits call
-is wrapped so it can fail alone. An empty repository has no commits at all, and a
-rate-limit response on one request shouldn't throw away a successful response to the
-other. When it's unavailable the UI shows last-push instead, labelled as such, rather
-than silently presenting one as the other.
-
-### Tracking fetches the commit date in the background
-
-The search endpoint returns stars and issues but not commit data, so tracking a repo
-seeds the row from the search result and then refreshes it to fill in the real
-last-commit date.
-
-That background refresh is deliberately *silent*: it doesn't set a loading state.
-Replacing numbers that are already on screen with a spinner would be a downgrade
-rather than feedback, and if it fails the seeded stats stay — we simply couldn't add
-the commit date yet. Manual refresh, where the user asked for it and expects to see
-something happen, does show loading and does surface errors.
-
-### What lives in a store, and what doesn't
-
-Zustand holds three things: tracked repos, search state, and theme preference.
-The active tab is plain `useState` in `App`, because nothing else reads it and
-putting it in a store would be indirection with no benefit.
-
-Theme is the interesting case. It started as local state and had two defects worth
-naming: `useState(prefersDark ? …)` captures the system preference on first render
-only, so changing the OS theme with the app open did nothing — and the choice was
-lost on reload. It's now a store where `null` means "no explicit choice, follow the
-system", so the app tracks OS changes live until the user toggles, and remembers the
-choice afterwards.
+Theme is the case worth explaining: `null` means "no explicit choice", so the app
+follows the system preference and tracks OS changes live until the user toggles,
+then remembers that choice across reloads. Local state would reset on every visit.
 
 The rule: lift state when something else needs it, or when it has to outlive the
-component. Not because a store feels tidier.
+component.
 
 ### Chart dependency lives in the charts package
 
@@ -203,10 +149,6 @@ component. Not because a store feels tidier.
 and never imports it. That's the practical test of whether the package boundary is
 real: the app asks for a chart and passes labelled numbers, and the charting library
 could be swapped for Chart.js or a hand-rolled SVG without the app changing at all.
-
-Shared libraries that *do* cross the boundary — React, MUI, emotion — are kept on a
-single version across the workspace. Two copies of MUI resolving in one build gives
-you two theme contexts and a build that fails in ways that don't point at the cause.
 
 ### Why Vite rather than Next.js
 
@@ -229,12 +171,8 @@ failure so users aren't retrying into the same wall.
   this to 5,000/hour and would be the first change for real use.
 - **No pagination** — search returns the top 20 by stars. The API supports more; it
   wasn't required here.
-- **Two API calls per refresh.** `pushed_at` from the repo endpoint is not the last
-  commit date — a push can contain commits authored earlier, and force-pushes move it
-  without a new commit — so the commits endpoint is queried alongside it. They run in
-  parallel, and the commit call is allowed to fail independently: an empty repo has no
-  commits, and one failure shouldn't discard stars and issues that were fetched
-  successfully. The card falls back to last-push with a label saying so.
+- **Two API calls per refresh**, since the last commit date needs the commits
+  endpoint as well as the repo endpoint.
 - **Tracked repos are per-browser**, via `localStorage`. No accounts, no sync.
 - **No end-to-end tests.** The unit and component tests cover the logic and render
   states; a Playwright test covering search → track → refresh → reload would be the
@@ -242,32 +180,19 @@ failure so users aren't retrying into the same wall.
 
 ## Testing
 
-`pnpm test` — 14 tests across the API layer, the store, and the card component.
+`pnpm test` — 15 tests across the API layer, store, and component behaviour.
 
-They're deliberately few and aimed at behaviour that could actually break, rather
-than at a coverage number. The three that earn their place:
+Tests focus on regressions and architectural guarantees:
 
-**The commit fallback.** When `/commits` fails — an empty repository, or a rate
-limit — the stats that *were* fetched must survive, and the UI must say "last push"
-rather than silently presenting a push date as a commit date. Tested at both layers.
+- **Commit fallback:** a failed commit request must not discard successfully fetched
+  repository stats.
+- **Per-repo independence:** one repository failing to refresh must not affect another.
+- **Persistence:** repository identity is persisted, while stale stats are not.
 
-**Per-repo independence.** One repo's refresh failing must leave another repo's
-successful state untouched. That's the requirement the keyed store shape exists to
-satisfy, so it's worth asserting rather than assuming.
-
-**What is and isn't persisted.** Repo identity is written to `localStorage`; stats
-deliberately are not, because stale numbers shown as current are worse than none.
-
-Component tests query by role and visible text rather than test IDs, so they break
-when the feature breaks and survive a refactor. Deliberately not tested: that MUI
-renders a button, or that a prop reaches a child.
-
-`RepoCard.test.tsx` sits in the app rather than in `packages/ui` on purpose. It
-renders the component the way the app consumes it — imported from `@repo-radar/ui`,
-given the same status shapes the store produces — so it's a consumer contract test
-rather than a unit test of the package in isolation. Tests live next to the code they
-exercise; there's no `unit/` or `integration/` split, because fourteen tests don't
-need one.
+Component tests use roles and visible text rather than implementation-specific test
+IDs. `RepoCard.test.tsx` lives in the app intentionally as a consumer-contract test:
+it imports the shared component through `@repo-radar/ui` and exercises it with the
+same state shapes the application uses.
 
 ## Optional extras included
 
