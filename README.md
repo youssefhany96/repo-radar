@@ -180,7 +180,7 @@ failure so users aren't retrying into the same wall.
 
 ## Testing
 
-`pnpm test` — 15 tests across the API layer, store, and component behaviour.
+`pnpm test` — 19 tests across the API layer, stores, and component behaviour.
 
 Tests focus on regressions and architectural guarantees:
 
@@ -188,6 +188,8 @@ Tests focus on regressions and architectural guarantees:
   repository stats.
 - **Per-repo independence:** one repository failing to refresh must not affect another.
 - **Persistence:** repository identity is persisted, while stale stats are not.
+- **Search race condition:** a superseded request must not overwrite newer results,
+  and an aborted request must not surface as an error.
 
 Component tests use roles and visible text rather than implementation-specific test
 IDs. `RepoCard.test.tsx` lives in the app intentionally as a consumer-contract test:

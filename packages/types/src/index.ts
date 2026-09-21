@@ -1,5 +1,3 @@
-// Shared domain types. No dependencies, so nothing can create a cycle.
-
 /** A repository as returned by the GitHub search API (the fields we use). */
 export interface Repository {
   id: number;
