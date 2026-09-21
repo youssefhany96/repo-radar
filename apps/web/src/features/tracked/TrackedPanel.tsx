@@ -17,22 +17,9 @@ export function TrackedPanel() {
   // Ids currently being fetched, so an effect re-run doesn't duplicate work.
   const inFlight = useRef(new Set<number>());
 
-  /**
-   * Repos restored from localStorage come back as `idle` — fetch their stats.
-   *
-   * Two things this has to get right:
-   *
-   * Tracking is per-repo rather than a single "have I hydrated" flag. A flag
-   * plus a cancellation guard deadlocks under StrictMode's double-invoke: the
-   * first pass sets the flag and starts the loop, cleanup cancels it, and the
-   * second pass returns early because the flag is already set — so nothing ever
-   * loads. Recording which ids are in flight means a cancelled pass simply
-   * leaves them idle for the next one to pick up.
-   *
-   * And it is sequential rather than Promise.all, because GitHub allows 60
-   * unauthenticated requests an hour and a batch of twenty is the quickest way
-   * to exhaust it.
-   */
+  // Repos restored from localStorage come back as `idle`. Tracked per-repo
+  // rather than with one "hydrated" flag, which deadlocks under StrictMode's
+  // double-invoke. Sequential to stay inside GitHub's rate limit.
   useEffect(() => {
     const pending = order.filter(
       (id) => stats[id]?.status === "idle" && !inFlight.current.has(id),
@@ -49,15 +36,8 @@ export function TrackedPanel() {
     })();
   }, [order, stats, refresh]);
 
-  /**
-   * Every tracked repo appears in the chart, including ones still loading or
-   * whose refresh failed — those plot at zero.
-   *
-   * Filtering to `status === "success"` made bars appear and disappear as
-   * refreshes resolved, so a chart titled "stars per tracked repository" was
-   * showing fewer repositories than the list beneath it. A repo the user is
-   * tracking should be represented whether or not its stats have arrived yet.
-   */
+  // Every tracked repo appears, loading or failed ones plotted at zero —
+  // filtering to `success` showed fewer bars than rows in the list.
   const chartData: ChartDatum[] = useMemo(
     () =>
       order
