@@ -14,24 +14,39 @@ export function TrackedPanel() {
   const refreshAll = useTrackedStore((s) => s.refreshAll);
 
   const anyLoading = order.some((id) => stats[id]?.status === "loading");
-  const hydrated = useRef(false);
+  // Ids currently being fetched, so an effect re-run doesn't duplicate work.
+  const inFlight = useRef(new Set<number>());
 
-  // Repos restored from localStorage come back as `idle` — fetch their stats
-  // once on mount. Sequential, to stay inside GitHub's rate limit.
+  /**
+   * Repos restored from localStorage come back as `idle` — fetch their stats.
+   *
+   * Two things this has to get right:
+   *
+   * Tracking is per-repo rather than a single "have I hydrated" flag. A flag
+   * plus a cancellation guard deadlocks under StrictMode's double-invoke: the
+   * first pass sets the flag and starts the loop, cleanup cancels it, and the
+   * second pass returns early because the flag is already set — so nothing ever
+   * loads. Recording which ids are in flight means a cancelled pass simply
+   * leaves them idle for the next one to pick up.
+   *
+   * And it is sequential rather than Promise.all, because GitHub allows 60
+   * unauthenticated requests an hour and a batch of twenty is the quickest way
+   * to exhaust it.
+   */
   useEffect(() => {
-    if (hydrated.current) return;
-    const stale = order.filter((id) => stats[id]?.status === "idle");
-    if (stale.length === 0) return;
-    hydrated.current = true;
+    const pending = order.filter(
+      (id) => stats[id]?.status === "idle" && !inFlight.current.has(id),
+    );
+    if (pending.length === 0) return;
 
-    let cancelled = false;
+    pending.forEach((id) => inFlight.current.add(id));
+
     void (async () => {
-      for (const id of stale) {
-        if (cancelled) return;
+      for (const id of pending) {
         await refresh(id);
+        inFlight.current.delete(id);
       }
     })();
-    return () => { cancelled = true; };
   }, [order, stats, refresh]);
 
   /**
