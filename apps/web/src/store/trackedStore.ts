@@ -9,7 +9,8 @@ import type {
 import { getRepoStats } from "../api/github";
 
 // Stats are keyed by id so a row can subscribe to its own entry and re-render
-// alone when it changes. See README for why not an array.
+// alone when it changes. `order` is separate because integer-like object keys
+// are sorted numerically, not by insertion.
 interface TrackedState {
   repos: Record<number, TrackedRepo>;
   order: number[];
