@@ -1,4 +1,4 @@
-import { Box, Typography, useTheme } from "@mui/material";
+import { Box, Typography, useMediaQuery, useTheme } from "@mui/material";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
 } from "recharts";
@@ -14,13 +14,17 @@ interface StarsBarChartProps {
 const compact = new Intl.NumberFormat("en", { notation: "compact" });
 
 export function StarsBarChart({
-  data, title, height = 260, emptyMessage = "Nothing to chart yet.",
+  data, title, height, emptyMessage = "Nothing to chart yet.",
 }: StarsBarChartProps) {
   const theme = useTheme();
+  // Angled labels at desktop size overlap badly under ~600px, so the chart
+  // shortens them and reduces the angle rather than letting them collide.
+  const isNarrow = useMediaQuery(theme.breakpoints.down("sm"));
+  const chartHeight = height ?? (isNarrow ? 300 : 260);
 
   if (data.length === 0) {
     return (
-      <Box sx={{ height, display: "grid", placeItems: "center" }}>
+      <Box sx={{ height: chartHeight, display: "grid", placeItems: "center" }}>
         <Typography variant="body2" color="text.secondary">{emptyMessage}</Typography>
       </Box>
     );
@@ -29,13 +33,20 @@ export function StarsBarChart({
   return (
     <Box>
       {title && <Typography variant="subtitle2" sx={{ mb: 2 }}>{title}</Typography>}
-      <ResponsiveContainer width="100%" height={height}>
+      <ResponsiveContainer width="100%" height={chartHeight}>
         <BarChart data={data} margin={{ top: 8, right: 8, bottom: 8, left: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke={theme.palette.divider} vertical={false} />
           <XAxis
-            dataKey="label" tick={{ fontSize: 12 }}
+            dataKey="label"
+            tick={{ fontSize: isNarrow ? 10 : 12 }}
             stroke={theme.palette.text.secondary}
-            interval={0} angle={-25} textAnchor="end" height={70}
+            interval={0}
+            angle={isNarrow ? -45 : -25}
+            textAnchor="end"
+            height={isNarrow ? 80 : 70}
+            tickFormatter={(label: string) =>
+              isNarrow && label.length > 10 ? `${label.slice(0, 9)}…` : label
+            }
           />
           <YAxis
             tick={{ fontSize: 12 }} stroke={theme.palette.text.secondary}

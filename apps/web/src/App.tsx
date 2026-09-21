@@ -65,13 +65,15 @@ export default function App() {
         </Toolbar>
       </AppBar>
 
-      <Container maxWidth="md" sx={{ py: 3 }}>
-        <Tabs value={tab} onChange={(_, v: number) => setTab(v)} sx={{ mb: 3 }}>
+      <Container maxWidth="md" sx={{ py: 3, px: { xs: 2, sm: 3 } }}>
+        <Tabs
+          value={tab}
+          onChange={(_, v: number) => setTab(v)}
+          variant="fullWidth"
+          sx={{ mb: 3 }}
+        >
           <Tab label="Search" />
           <Tab
-            /* Padding on the tab rather than negative offset on the badge —
-               the tab clips its overflow, so pushing the badge outside its
-               bounds cuts it off. */
             sx={{ pr: 3.5 }}
             label={
               <Badge

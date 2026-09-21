@@ -53,11 +53,13 @@ export function RepoCard({
   return (
     <Card variant="outlined">
       <CardContent>
-        <Stack direction="row" spacing={2} sx={{ alignItems: "flex-start" }}>
+        <Stack direction="row" spacing={{ xs: 1, sm: 2 }} sx={{ alignItems: "flex-start" }}>
           <Box sx={{ flex: 1, minWidth: 0 }}>
             <Link
               href={htmlUrl} target="_blank" rel="noopener noreferrer"
-              underline="hover" variant="subtitle1" sx={{ fontWeight: 600 }}
+              underline="hover"
+              variant="subtitle1"
+              sx={{ fontWeight: 600, wordBreak: "break-word" }}
             >
               {fullName}
             </Link>
@@ -126,7 +128,7 @@ export function RepoCard({
             </Stack>
           </Box>
 
-          <Stack direction="row" spacing={0.5}>
+          <Stack direction="row" spacing={0.5} sx={{ flexShrink: 0 }}>
             {onRefresh && (
               <Tooltip title="Refresh">
                 <span>

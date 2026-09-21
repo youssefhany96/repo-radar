@@ -59,7 +59,7 @@ export function TrackedPanel() {
 
   return (
     <Stack spacing={3}>
-      <Paper variant="outlined" sx={{ p: 2 }}>
+      <Paper variant="outlined" sx={{ p: { xs: 1.5, sm: 2 } }}>
         <StarsBarChart
           data={chartData}
           title="Stars per tracked repository"
