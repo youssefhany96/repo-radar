@@ -34,14 +34,26 @@ export function TrackedPanel() {
     return () => { cancelled = true; };
   }, [order, stats, refresh]);
 
+  /**
+   * Every tracked repo appears in the chart, including ones still loading or
+   * whose refresh failed — those plot at zero.
+   *
+   * Filtering to `status === "success"` made bars appear and disappear as
+   * refreshes resolved, so a chart titled "stars per tracked repository" was
+   * showing fewer repositories than the list beneath it. A repo the user is
+   * tracking should be represented whether or not its stats have arrived yet.
+   */
   const chartData: ChartDatum[] = useMemo(
     () =>
       order
         .map((id) => {
           const s = stats[id];
           const repo = repos[id];
-          if (!repo || s?.status !== "success") return null;
-          return { label: repo.name, value: s.data.stargazers_count };
+          if (!repo) return null;
+          return {
+            label: repo.name,
+            value: s?.status === "success" ? s.data.stargazers_count : 0,
+          };
         })
         .filter((d): d is ChartDatum => d !== null)
         .sort((a, b) => b.value - a.value),
@@ -63,7 +75,7 @@ export function TrackedPanel() {
         <StarsBarChart
           data={chartData}
           title="Stars per tracked repository"
-          emptyMessage="Refresh to load star counts."
+          emptyMessage="No repositories tracked yet."
         />
       </Paper>
 
