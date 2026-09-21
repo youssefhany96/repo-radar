@@ -30,7 +30,19 @@ export function StarsBarChart({
   }
 
   return (
-    <Box>
+    <Box
+      sx={{
+        // Recharts makes several elements focusable for keyboard users, but the
+        // outline also fires on mouse click. `:focus-visible` keeps the
+        // affordance for keyboard navigation without the stray ring on click.
+        "& :focus": { outline: "none" },
+        "& :focus-visible": {
+          outline: `2px solid ${theme.palette.primary.main}`,
+          outlineOffset: 2,
+          borderRadius: 4,
+        },
+      }}
+    >
       {title && <Typography variant="subtitle2" sx={{ mb: 2 }}>{title}</Typography>}
       <ResponsiveContainer width="100%" height={chartHeight}>
         <BarChart data={data} margin={{ top: 8, right: 8, bottom: 8, left: 0 }}>
