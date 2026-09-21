@@ -63,10 +63,14 @@ describe("RepoCard", () => {
 
   it("surfaces an error without losing the repo", () => {
     render(
-      <RepoCard {...base} stats={{ status: "error", message: "Rate limited" }} />,
+      <RepoCard
+        {...base}
+        stats={{ status: "error", message: "GitHub rate limit reached." }}
+      />,
     );
 
-    expect(screen.getByText(/couldn't refresh/i)).toBeInTheDocument();
+    // The reason is shown, not a generic failure label
+    expect(screen.getByText(/rate limit reached/i)).toBeInTheDocument();
     // The repo itself is still listed — a failed refresh is not a removed repo
     expect(screen.getByText("facebook/react")).toBeInTheDocument();
   });

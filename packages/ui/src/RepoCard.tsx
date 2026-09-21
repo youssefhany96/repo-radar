@@ -81,11 +81,16 @@ export function RepoCard({
               )}
 
               {stats?.status === "error" && (
-                <Tooltip title={stats.message}>
-                  <Typography variant="caption" color="error">
-                    Couldn&apos;t refresh
-                  </Typography>
-                </Tooltip>
+                // The message itself rather than a generic label: a rate limit
+                // and a deleted repo need different reactions from the user.
+                <Typography
+                  variant="caption"
+                  color="error"
+                  role="status"
+                  sx={{ alignSelf: "center" }}
+                >
+                  {stats.message}
+                </Typography>
               )}
 
               {stats?.status === "success" && (
