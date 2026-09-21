@@ -1,10 +1,4 @@
-/**
- * Shared domain types.
- *
- * This package has no dependencies — not even React. It sits at the bottom of
- * the dependency graph so both the app and the UI packages can use it without
- * creating a cycle.
- */
+// Shared domain types. No dependencies, so nothing can create a cycle.
 
 /** A repository as returned by the GitHub search API (the fields we use). */
 export interface Repository {
@@ -20,14 +14,7 @@ export interface Repository {
   pushed_at: string;
 }
 
-/**
- * A tracked repo's live stats, fetched and refreshed independently.
- *
- * Status is a discriminated union rather than booleans: `isLoading` + `error` +
- * `data` as separate flags allows states that can't actually happen (loading
- * AND error), and the UI then has to guard against them. With a union, the
- * status determines exactly what's available.
- */
+/** A union rather than separate flags, so impossible states can't be represented. */
 export type RepoStatsStatus =
   | { status: "idle" }
   | { status: "loading" }
@@ -39,14 +26,7 @@ export interface RepoStats {
   open_issues_count: number;
   /** Last push to any branch — cheap, available on the repo endpoint. */
   pushed_at: string;
-  /**
-   * Actual last commit date, from the commits endpoint.
-   *
-   * `pushed_at` is not the same thing: a push can contain commits authored
-   * earlier, and force-pushes or branch deletions move it without a new commit.
-   * Null when the commits call fails or the repo is empty — the rest of the
-   * stats are still usable, so one failure shouldn't discard them.
-   */
+  /** From the commits endpoint. Null if that call failed or the repo is empty. */
   lastCommitDate: string | null;
 }
 

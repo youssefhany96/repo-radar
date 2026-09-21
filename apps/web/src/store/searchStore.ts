@@ -12,14 +12,8 @@ interface SearchState {
   run: (q: string) => Promise<void>;
 }
 
-/**
- * Cancellation is handled here rather than in the component.
- *
- * Without it, a slow request for "re" can resolve after a fast one for "react"
- * and overwrite the newer results — the classic search race condition. Each new
- * search aborts the previous one, and an aborted request is not treated as a
- * failure, because it isn't one.
- */
+// Cancel the previous search to prevent stale responses
+// from overwriting results for a newer query.
 let inFlight: AbortController | null = null;
 
 export const useSearchStore = create<SearchState>()((set) => ({

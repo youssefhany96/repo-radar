@@ -8,17 +8,8 @@ import type {
 } from "@repo-radar/types";
 import { getRepoStats } from "../api/github";
 
-/**
- * Tracked repos and their stats are two maps keyed by id, plus an order array.
- *
- * The obvious alternative — one array of repos with stats attached — makes
- * "independent loading state per repo" only appear to work. Refreshing one repo
- * means producing a new array, so every row re-renders.
- *
- * Keyed maps let a row subscribe to exactly its own slice:
- *   useTrackedStore((s) => s.stats[id])
- * and re-render alone when that one entry changes.
- */
+// Stats are keyed by id so a row can subscribe to its own entry and re-render
+// alone when it changes. See README for why not an array.
 interface TrackedState {
   repos: Record<number, TrackedRepo>;
   order: number[];
@@ -26,8 +17,7 @@ interface TrackedState {
 
   track: (repo: Repository) => void;
   untrack: (id: number) => void;
-  /** `silent` skips the loading state — used for background upgrades where
-   *  stats are already on screen and blanking them would be a regression. */
+  /** `silent` skips the loading state for background upgrades. */
   refresh: (id: number, options?: { silent?: boolean }) => Promise<void>;
   refreshAll: () => Promise<void>;
 }
@@ -41,9 +31,7 @@ export const useTrackedStore = create<TrackedState>()(
 
       track: (r) => {
         if (get().repos[r.id]) return;
-        // Search gives stars and issues but not the commit date, so the row is
-        // seeded from the search result and then refreshed in the background to
-        // fill in the real last-commit date.
+
         set((s) => ({
           repos: {
             ...s.repos,
@@ -75,8 +63,7 @@ export const useTrackedStore = create<TrackedState>()(
           },
         }));
 
-        // Fire-and-forget: the row is already usable, this just upgrades
-        // last-push to the real last-commit date when it arrives.
+        // Search has no commit data — upgrade last-push to last-commit.
         void get().refresh(r.id, { silent: true });
       },
 
@@ -91,8 +78,7 @@ export const useTrackedStore = create<TrackedState>()(
         const repo = get().repos[id];
         if (!repo) return;
 
-        // A silent refresh leaves the existing stats visible. Showing a spinner
-        // over numbers we already have would be a downgrade, not feedback.
+        // Don't blank stats already on screen for a refresh nobody asked for.
         if (!options?.silent) {
           set((s) => ({ stats: { ...s.stats, [id]: { status: "loading" } } }));
         }
@@ -106,8 +92,7 @@ export const useTrackedStore = create<TrackedState>()(
             },
           }));
         } catch (e) {
-          // A failed background upgrade keeps what's on screen — the seeded
-          // stats are still valid, we just couldn't add the commit date.
+          // Background upgrade failed — keep the seeded stats.
           if (options?.silent) return;
           set((s) => ({
             stats: {
@@ -121,8 +106,7 @@ export const useTrackedStore = create<TrackedState>()(
         }
       },
 
-      // Sequential, not Promise.all. GitHub allows 60 unauthenticated requests
-      // per hour — firing twenty at once is the quickest way to hit that wall.
+      // Sequential to avoid bursting GitHub's 60 req/hour limit.
       refreshAll: async () => {
         for (const id of get().order) {
           await get().refresh(id);
@@ -133,19 +117,11 @@ export const useTrackedStore = create<TrackedState>()(
       name: "repo-radar:tracked:v1", // versioned, so the shape can change later
       storage: createJSONStorage(() => localStorage),
 
-      /**
-       * Only repo identity is persisted, never stats.
-       *
-       * Stats from a previous session are stale by definition, and showing stale
-       * numbers as if current is worse than showing none.
-       */
+      // Identity only — stats from a previous session would be stale.
       partialize: (s) => ({ repos: s.repos, order: s.order }),
 
-      /**
-       * On rehydrate, mark everything idle so the UI knows it needs fresh stats.
-       * Anything could be in localStorage — another tab, an older version, a
-       * user editing it — so the shape is validated rather than trusted.
-       */
+      // Mark everything idle on rehydrate, and drop entries with no repo —
+      // localStorage can't be trusted.
       onRehydrateStorage: () => (state) => {
         if (!state) return;
         const order = state.order.filter((id) => Boolean(state.repos[id]));

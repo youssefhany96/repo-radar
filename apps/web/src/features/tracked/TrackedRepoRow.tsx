@@ -2,13 +2,7 @@ import { memo } from "react";
 import { RepoCard } from "@repo-radar/ui";
 import { useTrackedStore } from "../../store/trackedStore";
 
-/**
- * One row, subscribed only to its own slice.
- *
- * Selecting `stats[id]` rather than the whole stats object means refreshing one
- * repo re-renders one row. That's what makes per-repo loading state real rather
- * than merely visual.
- */
+// Subscribes to its own stats entry, so refreshing one repo re-renders one row.
 export const TrackedRepoRow = memo(function TrackedRepoRow({ id }: { id: number }) {
   const repo = useTrackedStore((s) => s.repos[id]);
   const stats = useTrackedStore((s) => s.stats[id]);

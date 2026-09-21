@@ -8,16 +8,12 @@ interface SearchFieldProps {
   placeholder?: string;
 }
 
-/**
- * Controlled input. Deliberately knows nothing about debouncing or fetching —
- * that's the consumer's concern, which keeps this reusable anywhere.
- */
+// Knows nothing about debouncing or fetching — that's the consumer's concern.
 export function SearchField({ value, onChange, loading, placeholder }: SearchFieldProps) {
   return (
     <TextField
       fullWidth
-      /* Chrome paints its own opaque background on autofilled inputs, which
-         ignores the theme and looks broken in dark mode. */
+      /* Chrome's autofill background ignores the theme. */
       sx={{
         "& input:-webkit-autofill": {
           WebkitBoxShadow: "0 0 0 100px transparent inset",

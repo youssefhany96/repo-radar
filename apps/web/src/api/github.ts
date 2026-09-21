@@ -2,11 +2,7 @@ import type { GitHubSearchResponse, RepoStats } from "@repo-radar/types";
 
 const BASE = "https://api.github.com";
 
-/**
- * GitHub's unauthenticated rate limit is 60 requests/hour for the REST API and
- * 10/minute for search. That's the main real-world constraint here — it's why
- * search is debounced and why "refresh all" is sequential rather than parallel.
- */
+// Unauthenticated: 60 requests/hour, 10 searches/minute.
 class GitHubError extends Error {
   readonly status: number;
   constructor(message: string, status: number) {
@@ -54,13 +50,9 @@ interface CommitResponse {
 }
 
 /**
- * Two calls, because `pushed_at` on the repo endpoint is not the last commit
- * date — a push can contain older commits, and force-pushes move it without a
- * new commit. The commits endpoint gives the real thing.
- *
- * They run in parallel since neither depends on the other, and the commit call
- * is allowed to fail on its own: an empty repo has no commits, and a rate limit
- * shouldn't discard stars and issues we successfully fetched.
+ * Two calls: `pushed_at` is the last push, not the last commit. They run in
+ * parallel, and the commit call may fail alone so a failure there doesn't
+ * discard stars and issues.
  */
 export async function getRepoStats(
   fullName: string,

@@ -23,8 +23,7 @@ import { SearchPanel } from "./features/search/SearchPanel";
 import { TrackedPanel } from "./features/tracked/TrackedPanel";
 
 export default function App() {
-  // useMediaQuery re-renders when the OS theme changes, so an app following
-  // the system stays in sync rather than being stuck on its initial value.
+  // Re-renders on OS theme change, so following the system stays in sync.
   const prefersDark = useMediaQuery("(prefers-color-scheme: dark)");
   const storedMode = useThemeStore((s) => s.mode);
   const toggleMode = useThemeStore((s) => s.toggle);

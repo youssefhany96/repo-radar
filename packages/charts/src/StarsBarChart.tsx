@@ -17,8 +17,7 @@ export function StarsBarChart({
   data, title, height, emptyMessage = "Nothing to chart yet.",
 }: StarsBarChartProps) {
   const theme = useTheme();
-  // Angled labels at desktop size overlap badly under ~600px, so the chart
-  // shortens them and reduces the angle rather than letting them collide.
+  // Labels overlap under ~600px.
   const isNarrow = useMediaQuery(theme.breakpoints.down("sm"));
   const chartHeight = height ?? (isNarrow ? 300 : 260);
 
@@ -53,8 +52,7 @@ export function StarsBarChart({
             tickFormatter={(v: number) => compact.format(v)}
           />
           <Tooltip
-            /* Recharts' default hover cursor is opaque light grey, which reads
-               as a rendering artefact on a dark background. */
+            /* Default cursor is opaque grey — wrong on dark backgrounds. */
             cursor={{ fill: theme.palette.action.hover }}
             formatter={(value) => [Number(value).toLocaleString(), "Stars"]}
             contentStyle={{
@@ -67,8 +65,7 @@ export function StarsBarChart({
             dataKey="value"
             fill={theme.palette.primary.main}
             radius={[4, 4, 0, 0]}
-            /* Without a cap, two repos produce two enormous blocks — Recharts
-               spreads bars to fill the available width. */
+            /* Recharts fills available width — two repos would be huge. */
             maxBarSize={72}
           />
         </BarChart>

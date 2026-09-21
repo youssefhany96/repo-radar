@@ -9,15 +9,8 @@ interface ThemeState {
   toggle: (systemPrefersDark: boolean) => void;
 }
 
-/**
- * Theme preference is in a store rather than component state for one reason:
- * it has to survive a reload. Local state would reset to system preference on
- * every visit, quietly discarding a choice the user made.
- *
- * `null` is meaningful here — it means "no explicit choice", so the app keeps
- * following the system and updates live if the OS theme changes. Only once the
- * user toggles does an explicit value get stored.
- */
+// In a store because the choice has to survive a reload. `null` means no
+// explicit choice, so the app keeps following the system.
 export const useThemeStore = create<ThemeState>()(
   persist(
     (set, get) => ({

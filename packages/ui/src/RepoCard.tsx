@@ -22,11 +22,7 @@ interface RepoCardProps {
   onTrack?: () => void;
   onUntrack?: () => void;
   onRefresh?: () => void;
-  /**
-   * Search results and the tracked list use the same card but need different
-   * affordances: in search, "tracked" is a state to confirm; in the tracked
-   * list it's an action to undo.
-   */
+  /** In search, "tracked" is a state to confirm; in the list, an action to undo. */
   variant?: "search" | "tracked";
 }
 
@@ -41,11 +37,7 @@ function relativeTime(iso: string): string {
   return months < 12 ? `${months}mo ago` : `${Math.floor(months / 12)}y ago`;
 }
 
-/**
- * Presentational. Receives everything it renders and reports interactions
- * upward — no store access, no data fetching. That's what makes it belong in a
- * shared package rather than in the app.
- */
+// Presentational — no store access, no fetching.
 export function RepoCard({
   fullName, description, language, htmlUrl,
   stats, isTracked, onTrack, onUntrack, onRefresh, variant = "tracked",
@@ -81,8 +73,6 @@ export function RepoCard({
                 />
               )}
 
-              {/* Each card renders its OWN status — this is why stats live in a
-                  keyed map rather than on one shared loading flag. */}
               {stats?.status === "loading" && (
                 <>
                   <Skeleton variant="rounded" width={72} height={24} />
