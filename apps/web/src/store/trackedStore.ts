@@ -81,7 +81,20 @@ export const useTrackedStore = create<TrackedState>()(
 
         // Don't blank stats already on screen for a refresh nobody asked for.
         if (!options?.silent) {
-          set((s) => ({ stats: { ...s.stats, [id]: { status: "loading" } } }));
+          set((s) => {
+            const current = s.stats[id];
+            return {
+              stats: {
+                ...s.stats,
+                [id]: {
+                  status: "loading",
+                  // Carried so consumers can keep showing the last known values
+                  // rather than dropping to nothing mid-request.
+                  previous: current?.status === "success" ? current.data : undefined,
+                },
+              },
+            };
+          });
         }
 
         try {

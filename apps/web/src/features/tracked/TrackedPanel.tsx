@@ -17,11 +17,6 @@ export function TrackedPanel() {
   // Ids currently being fetched, so an effect re-run doesn't duplicate work.
   const inFlight = useRef(new Set<number>());
 
-  // Last known star count per repo. Without this the chart plots a refreshing
-  // repo at zero, which drops its bar and — because the chart is sorted —
-  // reshuffles every other bar for the duration of the request.
-  const lastKnownStars = useRef<Record<number, number>>({});
-
   // Repos restored from localStorage come back as `idle`. Tracked per-repo
   // rather than with one "hydrated" flag, which deadlocks under StrictMode's
   // double-invoke. Sequential to stay inside GitHub's rate limit.
@@ -51,11 +46,16 @@ export function TrackedPanel() {
           const repo = repos[id];
           if (!repo) return null;
 
-          if (s?.status === "success") {
-            lastKnownStars.current[id] = s.data.stargazers_count;
-          }
+          // A repo mid-refresh keeps its last known value, so bars don't drop
+          // to zero and reshuffle the sort for the duration of the request.
+          const stars =
+            s?.status === "success"
+              ? s.data.stargazers_count
+              : s?.status === "loading"
+                ? (s.previous?.stargazers_count ?? 0)
+                : 0;
 
-          return { label: repo.name, value: lastKnownStars.current[id] ?? 0 };
+          return { label: repo.name, value: stars };
         })
         .filter((d): d is ChartDatum => d !== null)
         .sort((a, b) => b.value - a.value),

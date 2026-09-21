@@ -15,7 +15,8 @@ export interface Repository {
 /** A union rather than separate flags, so impossible states can't be represented. */
 export type RepoStatsStatus =
   | { status: "idle" }
-  | { status: "loading" }
+  /** `previous` keeps the last known stats visible while a refresh is in flight. */
+  | { status: "loading"; previous?: RepoStats }
   | { status: "success"; data: RepoStats; fetchedAt: number }
   | { status: "error"; message: string };
 
